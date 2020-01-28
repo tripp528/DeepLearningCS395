@@ -15,7 +15,7 @@
 #SBATCH --job-name=sketches
 # Output of this job, stderr and stdout are joined by default
 # %x=job-name %j=jobid
-#SBATCH --output=output/%x_%j.out
+#SBATCH --output=./output/%x_%j.out
 # change to the directory where you submitted this script
 cd ${SLURM_SUBMIT_DIR}
 # your job execution follows:

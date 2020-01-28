@@ -16,32 +16,33 @@ def load_dataset(num_samples=20000):
             filelist.append(line.strip())
 
     # get images and labels
-    images =  []
-    labels = []
+    images_train =  []
+    images_test = []
+    labels_train = []
+    labels_test = []
     count = 0
     for filepath in filelist[:num_samples]:
-        # parse label until slash and add to list
-        labels.append(filepath.partition("/")[0])
-
         # load image
         image_path = dataset_dir + filepath
         img = image.load_img(image_path,target_size=(224, 224,3))
         img = image.img_to_array(img)
 
+        # add to list
+        if count %80 < 60:
+            labels_train.append(filepath.partition("/")[0])
+            images_train.append(img)
+        else:
+            labels_test.append(filepath.partition("/")[0])
+            images_test.append(img)
+
         # display progress
         if count %100 == 0:
             print(count, "/", 20000)
-        images.append(img)
         count += 1
+    return np.asarray(images_train), pd.DataFrame(labels_train), \
+            np.asarray(images_test), pd.DataFrame(labels_test)
 
-    return np.asarray(images), pd.DataFrame(labels)
-
-def train_test_val_1hot(images,labels):
-
-    # train test split
-    xtrain, xtest,ytrain, ytest = train_test_split(images,labels,test_size=.2)
-    xtrain, xval,ytrain, yval = train_test_split(xtrain,ytrain,test_size=.2)
-
+def onehot(ytrain, ytest):
     # one hot encode with sklearn
     enc = OneHotEncoder(handle_unknown = 'ignore')
 
@@ -50,7 +51,6 @@ def train_test_val_1hot(images,labels):
     enc.fit(ytrain)
 
     ytrain_1hot = enc.transform(ytrain).toarray()
-    yval_1hot = enc.transform(yval).toarray()
     ytest_1hot = enc.transform(ytest).toarray()
 
-    return xtrain,xval, xtest,ytrain_1hot,yval_1hot, ytest_1hot
+    return ytrain_1hot, ytest_1hot

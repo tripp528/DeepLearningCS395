@@ -92,21 +92,21 @@ def train(xtrain,ytrain,xval,yval):
 if __name__ == '__main__':
     # load data
     if opt.load_dataset == False:
-        images,labels = load_dataset(num_samples=opt.num_samples)
-        # preprocess
-        images_prep = preprocess_input(images)
+        images_train,labels_train,images_test,labels_test = load_dataset(num_samples=opt.num_samples)
 
-        # split
-        xtrain,xval,xtest, ytrain,yval,ytest = train_test_val_1hot(images_prep,labels)
+        # preprocess
+        xtrain = preprocess_input(images_train)
+        xtest = preprocess_input(images_test)
+
+        # one hot
+        ytrain,ytest = onehot(labels_train,labels_test)
 
         if opt.save_dataset == True:
             pickle.dump((xtrain,ytrain), open(opt.path_prep+"train.p", "wb"), protocol=4)
-            pickle.dump((xval, yval), open(opt.path_prep+"val.p", "wb"), protocol=4)
             pickle.dump((xtest, ytest), open(opt.path_prep+"test.p", "wb"), protocol=4)
     else:
         xtrain,ytrain = pickle.load(open(opt.path_prep + "train.p","rb"))
-        xval,yval = pickle.load(open(opt.path_prep + "val.p","rb"))
         xtest,ytest = pickle.load(open(opt.path_prep + "test.p","rb"))
 
     #train model
-    train(xtrain,ytrain,xval,yval)
+    train(xtrain,ytrain,xtest,ytest)
