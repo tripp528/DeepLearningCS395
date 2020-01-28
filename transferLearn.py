@@ -1,3 +1,5 @@
+import pickle
+
 import tensorflow as tf
 
 from keras.applications.inception_v3 import InceptionV3, preprocess_input
@@ -11,6 +13,10 @@ from load_dataset import *
 
 # get args from command line
 flags = tf.app.flags
+flags.DEFINE_boolean("load_dataset",False,"Whether to save preprocessed dataset")
+flags.DEFINE_boolean("save_dataset",False,"Whether to save preprocessed dataset")
+flags.DEFINE_string("path_prep","Data/prep/prep.p","Number of samples")
+
 flags.DEFINE_integer("num_samples",20000,"Number of samples")
 flags.DEFINE_integer("epoch1",1,"Epochs for first pass")
 flags.DEFINE_integer("epoch2",1,"Epochs for second pass")
@@ -85,9 +91,16 @@ def train(xval,yval):
 
 if __name__ == '__main__':
     # load data
-    images,labels = load_dataset(num_samples=opt.num_samples)
-    # preprocess
-    images_prep = preprocess_input(images)
+    if opt.load_dataset == False:
+        images,labels = load_dataset(num_samples=opt.num_samples)
+        # preprocess
+        images_prep = preprocess_input(images)
+
+        if opt.save_dataset == True:
+            pickle.dump((images_prep,labels), open(opt.path_prep, "wb"))
+    else:
+        images_prep,labels = pickle.load(open(opt.path_prep,"rb"))
+
     # split
     xtrain,xval,xtest, ytrain,yval,ytest = train_test_val_1hot(images_prep,labels)
     #train model
