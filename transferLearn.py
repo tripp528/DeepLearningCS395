@@ -12,6 +12,8 @@ from load_dataset import *
 # get args from command line
 flags = tf.app.flags
 flags.DEFINE_integer("num_samples",20000,"Number of samples")
+flags.DEFINE_integer("epoch1",1,"Epochs for first pass")
+flags.DEFINE_integer("epoch2",1,"Epochs for second pass")
 opt = flags.FLAGS
 print("num_samples:",opt.num_samples)
 
@@ -39,14 +41,16 @@ def train(xval,yval):
         layer.trainable = False
 
     # compile the model (should be done *after* setting layers to non-trainable)
-    model.compile(optimizer='rmsprop', loss='categorical_crossentropy')
+    model.compile(optimizer='rmsprop',
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])
 
     # train the model on the new data for a few epochs
     history = model.fit(xtrain,
                           ytrain,
                           validation_data=(xval,yval),
     #                       batch_size=16,
-                          epochs=1)
+                          epochs=opt.epoch1)
 
     # at this point, the top layers are well trained and we can start fine-tuning
     # convolutional layers from inception V3. We will freeze the bottom N layers
@@ -67,7 +71,9 @@ def train(xval,yval):
     # we need to recompile the model for these modifications to take effect
     # we use SGD with a low learning rate
     from keras.optimizers import SGD
-    model.compile(optimizer=SGD(lr=0.0001, momentum=0.9), loss='categorical_crossentropy')
+    model.compile(optimizer=SGD(lr=0.0001, momentum=0.9),
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])
 
     # we train our model again (this time fine-tuning the top 2 inception blocks
     # alongside the top Dense layers
@@ -75,11 +81,11 @@ def train(xval,yval):
                           ytrain,
                           validation_data=(xval,yval),
     #                       batch_size=16,
-                          epochs=1)
+                          epochs=opt.epoch2)
 
 if __name__ == '__main__':
     # load data
-    images,labels = load_dataset(num_samples=100)
+    images,labels = load_dataset(num_samples=opt.num_samples)
     # preprocess
     images_prep = preprocess_input(images)
     # split
