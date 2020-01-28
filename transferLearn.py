@@ -96,12 +96,13 @@ if __name__ == '__main__':
         # preprocess
         images_prep = preprocess_input(images)
 
-        if opt.save_dataset == True:
-            pickle.dump((images_prep,labels), open(opt.path_prep, "wb"))
-    else:
-        images_prep,labels = pickle.load(open(opt.path_prep,"rb"))
+        # split
+        xtrain,xval,xtest, ytrain,yval,ytest = train_test_val_1hot(images_prep,labels)
 
-    # split
-    xtrain,xval,xtest, ytrain,yval,ytest = train_test_val_1hot(images_prep,labels)
+        if opt.save_dataset == True:
+            pickle.dump((xtrain,xval,xtest, ytrain,yval,ytest), open(opt.path_prep, "wb"))
+    else:
+        xtrain,xval,xtest, ytrain,yval,ytest = pickle.load(open(opt.path_prep,"rb"))
+
     #train model
     train(xval,yval)
