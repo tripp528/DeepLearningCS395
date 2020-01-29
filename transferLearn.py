@@ -140,21 +140,12 @@ def train(xtrain,ytrain,xtest,ytest):
     # )
     model = unparallel_model
 
-
-    # create a checkpoint to save the model
-    checkpoint = keras.callbacks.ModelCheckpoint(
-        opt.path_model,
-        monitor='val_acc',
-        # save_weights_only=True,
-        save_best_only=True,
-    )
-
     # train the model on the new data for a few epochs
+    print("ephochs1:",opt.epoch1)
     history = model.fit(xtrain,
                         ytrain,
                         validation_data=(xval,yval),
-                        epochs=opt.epoch1
-    )
+                        epochs=opt.epoch1)
 
     # at this point, the top layers are well trained and we can start fine-tuning
     # convolutional layers from inception V3. We will freeze the bottom N layers
@@ -173,14 +164,21 @@ def train(xtrain,ytrain,xtest,ytest):
                   loss='categorical_crossentropy',
                   metrics=['accuracy'])
 
+    # create a checkpoint to save the model
+    checkpoint = keras.callbacks.ModelCheckpoint(
+        opt.path_model,
+        monitor='val_acc',
+        save_best_only=True,
+    )
+
     # we train our model again (this time fine-tuning the top 2 inception blocks
     # alongside the top Dense layers
+    print("ephochs2:",opt.epoch2)
     history = model.fit(xtrain,
                           ytrain,
                           validation_data=(xval,yval),
                           epochs=opt.epoch2,
-                          callbacks=[checkpoint]
-    )
+                          callbacks=[checkpoint])
 
 def results(xtrain,ytrain,xtest,ytest,target_names):
     model = keras.models.load_model(opt.path_model)
@@ -192,18 +190,18 @@ def results(xtrain,ytrain,xtest,ytest,target_names):
     preds = model.predict(xtest)
 
     c = confusion_matrix(np.argmax(ytest, axis=-1), np.argmax(preds, axis=-1))
-    plot_confusion_matrix(
-        c,
-        list(range(len(target_names))),
-        normalize=False,
-        output_path='./output',
-    )
-    plot_confusion_matrix(
-        c,
-        list(range(len(target_names))),
-        normalize=True,
-        output_path='./output',
-    )
+    # plot_confusion_matrix(
+    #     c,
+    #     list(range(len(target_names))),
+    #     normalize=False,
+    #     output_path='./output',
+    # )
+    # plot_confusion_matrix(
+    #     c,
+    #     list(range(len(target_names))),
+    #     normalize=True,
+    #     output_path='./output',
+    # )
 
     print("target_names:",target_names)
     print(
