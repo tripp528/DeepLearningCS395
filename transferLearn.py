@@ -95,8 +95,8 @@ def train_v1(xtrain,ytrain,xtest,ytest):
 
     # define model
     input_tensor = Input(shape=(224, 224, 3))  # this assumes K.image_data_format() == 'channels_last'
-    num_classes = ytrain.shape[0]
-    print("ytrain.shape:", ytrain.shape)
+    num_classes = ytrain.shape[1]
+    print("num_classes", num_classes)
     model = InceptionV3(input_tensor=input_tensor, weights=None, include_top=True, classes=num_classes)
 
     # compile the model
