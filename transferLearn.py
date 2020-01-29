@@ -205,14 +205,14 @@ def results(xtrain,ytrain,xtest,ytest,target_names):
         output_path='./output',
     )
 
-    # print("target_names:",target_names)
-    # print(
-    #     classification_report(
-    #         np.argmax(ytest, axis=-1),
-    #         np.argmax(preds, axis=-1),
-    #         target_names=[str(x) for x in range(len(target_names))],
-    #     )
-    # )
+    print("target_names:",target_names)
+    print(
+        classification_report(
+            np.argmax(ytest, axis=-1),
+            np.argmax(preds, axis=-1),
+            # target_names=[str(x) for x in range(len(target_names))],
+        )
+    )
 
 if __name__ == '__main__':
     # load data
