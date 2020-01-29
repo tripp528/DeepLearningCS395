@@ -29,6 +29,7 @@ flags.DEFINE_string("path_prep","Data/prep/","Number of samples")
 
 #save/load model options
 flags.DEFINE_boolean("train",True,"Whether to train or load model")
+flags.DEFINE_boolean("test",True,"Whether to calculate results")
 flags.DEFINE_string("path_model","output/model.h5","Number of samples")
 
 # training options
@@ -234,4 +235,5 @@ if __name__ == '__main__':
         train(xtrain,ytrain,xtest,ytest)
 
     # results of trained model
-    results(xtrain,ytrain,xtest,ytest, target_names)
+    if opt.test == True:
+        results(xtrain,ytrain,xtest,ytest, target_names)
