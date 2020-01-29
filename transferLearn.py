@@ -24,7 +24,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from load_dataset import *
 
 # get args from command line
-flags = tf.app.flags
+flags = tf.compat.v1.flags
 
 # dataset options
 flags.DEFINE_boolean("load_dataset",False,"Whether to save preprocessed dataset")
