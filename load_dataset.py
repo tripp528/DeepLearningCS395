@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 
 from sklearn.preprocessing import OneHotEncoder, normalize
-from sklearn.model_selection import train_test_split
 
 from tensorflow.keras.preprocessing import image
 
@@ -53,4 +52,4 @@ def onehot(ytrain, ytest):
     ytrain_1hot = enc.transform(ytrain).toarray()
     ytest_1hot = enc.transform(ytest).toarray()
 
-    return ytrain_1hot, ytest_1hot
+    return ytrain_1hot, ytest_1hot, enc.categories_[0]
