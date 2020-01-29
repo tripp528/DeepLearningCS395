@@ -17,8 +17,8 @@ from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Input
 from tensorflow.keras import backend as K
 
 # silence warnings
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+# import os
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # local imports
 from load_dataset import *
@@ -117,6 +117,7 @@ def train_v1(xtrain,ytrain,xtest,ytest):
     else:
         print("\n\nModel not parallelized over GPUs.\n\n")
         parallel_model = model
+
     parallel_model.compile(
         optimizer='adam',
         loss='categorical_crossentropy',
