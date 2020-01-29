@@ -127,17 +127,18 @@ def train(xtrain,ytrain,xtest,ytest):
     )
 
     # Distribute the neural network over multiple GPUs if available.
-    gpu_count = len(available_gpus())
-    if gpu_count > 1:
-        print(f"\n\nModel parallelized over {gpu_count} GPUs.\n\n")
-        model = keras.utils.multi_gpu_model(unparallel_model, gpus=gpu_count)
-    else:
-        print("\n\nModel not parallelized over GPUs.\n\n")
-        model = unparallel_model
-    model.compile(optimizer='rmsprop',
-                  loss='categorical_crossentropy',
-                  metrics=['accuracy']
-    )
+    # gpu_count = len(available_gpus())
+    # if gpu_count > 1:
+    #     print(f"\n\nModel parallelized over {gpu_count} GPUs.\n\n")
+    #     model = keras.utils.multi_gpu_model(unparallel_model, gpus=gpu_count)
+    # else:
+    #     print("\n\nModel not parallelized over GPUs.\n\n")
+    #     model = unparallel_model
+    # model.compile(optimizer='rmsprop',
+    #               loss='categorical_crossentropy',
+    #               metrics=['accuracy']
+    # )
+    model = unparallel_model
 
 
     # create a checkpoint to save the model
