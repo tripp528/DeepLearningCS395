@@ -9,12 +9,12 @@ from sklearn.metrics import confusion_matrix, classification_report
 import tensorflow as tf
 from tensorflow.python.client import device_lib
 
-import keras
-from keras.applications.inception_v3 import InceptionV3, preprocess_input
-from keras.preprocessing import image
-from keras.models import Model
-from keras.layers import Dense, GlobalAveragePooling2D, Input
-from keras import backend as K
+from tensorflow import keras
+from tensorflow.keras.applications.inception_v3 import InceptionV3, preprocess_input
+from tensorflow.keras.preprocessing import image
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Input
+from tensorflow.keras import backend as K
 
 # silence warnings
 import os
