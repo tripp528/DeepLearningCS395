@@ -16,6 +16,10 @@ from keras.models import Model
 from keras.layers import Dense, GlobalAveragePooling2D, Input
 from keras import backend as K
 
+# silence warnings
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 # local imports
 from load_dataset import *
 
@@ -105,6 +109,20 @@ def train_v1(xtrain,ytrain,xtest,ytest):
                   metrics=['accuracy']
     )
 
+    # Distribute the neural network over multiple GPUs if available.
+    gpu_count = len(available_gpus())
+    if gpu_count > 1:
+        print(f"\n\nModel parallelized over {gpu_count} GPUs.\n\n")
+        parallel_model = keras.utils.multi_gpu_model(model, gpus=gpu_count)
+    else:
+        print("\n\nModel not parallelized over GPUs.\n\n")
+        parallel_model = model
+    parallel_model.compile(
+        optimizer='adam',
+        loss='categorical_crossentropy',
+        metrics=['accuracy'],
+    )
+
     # create a checkpoint to save the model
     checkpoint = keras.callbacks.ModelCheckpoint(
         opt.output_dir + opt.model + ".h5",
@@ -114,11 +132,11 @@ def train_v1(xtrain,ytrain,xtest,ytest):
 
     # train
     print("ephochs2:",opt.epoch2)
-    history = model.fit(xtrain,
-                          ytrain,
-                          validation_data=(xval,yval),
-                          epochs=opt.epoch2,
-                          callbacks=[checkpoint])
+    parallel_model.fit(xtrain,
+                       ytrain,
+                       validation_data=(xval,yval),
+                       epochs=opt.epoch2,
+                       callbacks=[checkpoint])
 
 
 def train_v3(xtrain,ytrain,xtest,ytest):
