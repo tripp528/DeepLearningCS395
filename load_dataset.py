@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from sklearn.preprocessing import OneHotEncoder, normalize
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from tensorflow.keras.preprocessing import image
 
@@ -53,3 +53,10 @@ def onehot(ytrain, ytest):
     ytest_1hot = enc.transform(ytest).toarray()
 
     return ytrain_1hot, ytest_1hot, enc.categories_[0]
+
+def stdScale(xtrain, xtest):
+    # scaler = StandardScaler()
+    # xtrain = scaler.fit_transform( xtrain )
+    # xtest = scaler.transform( xtest )
+
+    return xtrain/255, xtest/255

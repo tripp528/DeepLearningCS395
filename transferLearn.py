@@ -13,7 +13,7 @@ import keras
 from keras.applications.inception_v3 import InceptionV3, preprocess_input
 from keras.preprocessing import image
 from keras.models import Model
-from keras.layers import Dense, GlobalAveragePooling2D
+from keras.layers import Dense, GlobalAveragePooling2D, Input
 from keras import backend as K
 
 # local imports
@@ -30,7 +30,8 @@ flags.DEFINE_string("path_prep","Data/prep/","Number of samples")
 #save/load model options
 flags.DEFINE_boolean("train",True,"Whether to train or load model")
 flags.DEFINE_boolean("test",True,"Whether to calculate results")
-flags.DEFINE_string("path_model","output/model.h5","Number of samples")
+flags.DEFINE_string("output_dir","output/","Number of samples")
+flags.DEFINE_string("model","model_v3","Which model?")
 
 # training options
 flags.DEFINE_integer("num_samples",20000,"Number of samples")
@@ -41,14 +42,8 @@ opt = flags.FLAGS
 
 print("num_samples:",opt.num_samples)
 
-def plot_confusion_matrix(
-        cm,
-        classes,
-        normalize=False,
-        title='Confusion matrix',
-        cmap='Blues',
-        output_path='.',
-):
+def plot_confusion_matrix(cm,classes,normalize=False,title='Confusion matrix',cmap='Blues',output_path='.',):
+
     """
     Logs and plots a confusion matrix, e.g. text and image output.
 
@@ -91,8 +86,42 @@ def available_gpus():
     local_device_protos = device_lib.list_local_devices()
     return [x.name for x in local_device_protos if x.device_type == 'GPU']
 
+def train_v1(xtrain,ytrain,xtest,ytest):
+    # preprocess
+    xtrain, xtest = stdScale(xtrain, xtest)
 
-def train(xtrain,ytrain,xtest,ytest):
+    # split off validation
+    xtrain, xval,ytrain, yval = train_test_split(xtrain,ytrain,test_size=.2)
+
+    # define model
+    input_tensor = Input(shape=(224, 224, 3))  # this assumes K.image_data_format() == 'channels_last'
+    num_classes = ytrain.shape[0]
+    print("ytrain.shape:", ytrain.shape)
+    model = InceptionV3(input_tensor=input_tensor, weights=None, include_top=True, classes=num_classes)
+
+    # compile the model
+    model.compile(optimizer='adam',
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy']
+    )
+
+    # create a checkpoint to save the model
+    checkpoint = keras.callbacks.ModelCheckpoint(
+        opt.output_dir + opt.model + ".h5",
+        monitor='val_acc',
+        save_best_only=True,
+    )
+
+    # train
+    print("ephochs2:",opt.epoch2)
+    history = model.fit(xtrain,
+                          ytrain,
+                          validation_data=(xval,yval),
+                          epochs=opt.epoch2,
+                          callbacks=[checkpoint])
+
+
+def train_v3(xtrain,ytrain,xtest,ytest):
     # preprocess
     xtrain = preprocess_input(xtrain)
     xtest = preprocess_input(xtest)
@@ -114,31 +143,17 @@ def train(xtrain,ytrain,xtest,ytest):
     predictions = Dense(num_categories, activation='softmax')(x)
 
     # this is the model we will train
-    unparallel_model = Model(inputs=base_model.input, outputs=predictions)
+    model = Model(inputs=base_model.input, outputs=predictions)
 
     # first: train only the top layers (which were randomly initialized)
     for layer in base_model.layers:
         layer.trainable = False
 
     # compile the model (should be done *after* setting layers to non-trainable)
-    unparallel_model.compile(optimizer='rmsprop',
+    model.compile(optimizer='rmsprop',
                   loss='categorical_crossentropy',
                   metrics=['accuracy']
     )
-
-    # Distribute the neural network over multiple GPUs if available.
-    # gpu_count = len(available_gpus())
-    # if gpu_count > 1:
-    #     print(f"\n\nModel parallelized over {gpu_count} GPUs.\n\n")
-    #     model = keras.utils.multi_gpu_model(unparallel_model, gpus=gpu_count)
-    # else:
-    #     print("\n\nModel not parallelized over GPUs.\n\n")
-    #     model = unparallel_model
-    # model.compile(optimizer='rmsprop',
-    #               loss='categorical_crossentropy',
-    #               metrics=['accuracy']
-    # )
-    model = unparallel_model
 
     # train the model on the new data for a few epochs
     print("ephochs1:",opt.epoch1)
@@ -166,7 +181,7 @@ def train(xtrain,ytrain,xtest,ytest):
 
     # create a checkpoint to save the model
     checkpoint = keras.callbacks.ModelCheckpoint(
-        opt.path_model,
+        opt.output_dir + opt.model + ".h5",
         monitor='val_acc',
         save_best_only=True,
     )
@@ -181,7 +196,7 @@ def train(xtrain,ytrain,xtest,ytest):
                           callbacks=[checkpoint])
 
 def results(xtrain,ytrain,xtest,ytest,target_names):
-    model = keras.models.load_model(opt.path_model)
+    model = keras.models.load_model(opt.output_dir + opt.model +".h5")
 
     score = model.evaluate(xtest, ytest, verbose=1)
     print(f'Test score:    {score[0]: .4f}')
@@ -194,13 +209,13 @@ def results(xtrain,ytrain,xtest,ytest,target_names):
     #     c,
     #     list(range(len(target_names))),
     #     normalize=False,
-    #     output_path='./output',
+    #     output_path=opt.output_dir,
     # )
     # plot_confusion_matrix(
     #     c,
     #     list(range(len(target_names))),
     #     normalize=True,
-    #     output_path='./output',
+    #     output_path=opt.output_dir,
     # )
 
     print("target_names:",target_names)
@@ -231,7 +246,10 @@ if __name__ == '__main__':
 
     #train model
     if opt.train == True:
-        train(xtrain,ytrain,xtest,ytest)
+        if opt.model == "model_v1":
+            train_v1(xtrain,ytrain,xtest,ytest)
+        if opt.model == "model_v3":
+            train_v3(xtrain,ytrain,xtest,ytest)
 
     # results of trained model
     if opt.test == True:
