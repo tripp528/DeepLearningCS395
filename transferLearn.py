@@ -44,8 +44,6 @@ flags.DEFINE_integer("epoch2",1,"Epochs for second pass")
 
 opt = flags.FLAGS
 
-print("num_samples:",opt.num_samples)
-
 def plot_confusion_matrix(cm,classes,normalize=False,title='Confusion matrix',cmap='Blues',output_path='.',):
 
     """
@@ -92,10 +90,7 @@ def available_gpus():
 
 def train_v1(xtrain,ytrain,xtest,ytest):
     # preprocess
-    xtrain, xtest = stdScale(xtrain, xtest)
-
-    # split off validation
-    xtrain, xval,ytrain, yval = train_test_split(xtrain,ytrain,test_size=.2)
+    xtrain, xval, xtest = stdScale(xtrain, xval, xtest)
 
     # define model
     input_tensor = Input(shape=(224, 224, 3))  # this assumes K.image_data_format() == 'channels_last'
@@ -128,25 +123,24 @@ def train_v1(xtrain,ytrain,xtest,ytest):
     checkpoint = keras.callbacks.ModelCheckpoint(
         opt.output_dir + opt.model + ".h5",
         monitor='val_acc',
-        save_best_only=True,
+        # save_best_only=True,
     )
 
     # train
     print("ephochs2:",opt.epoch2)
-    parallel_model.fit(xtrain,
-                       ytrain,
-                       validation_data=(xval,yval),
-                       epochs=opt.epoch2,
-                       callbacks=[checkpoint])
+    history = parallel_model.fit(xtrain,
+                               ytrain,
+                               validation_data=(xval,yval),
+                               epochs=opt.epoch2,
+                               callbacks=[checkpoint])
 
+    return history
 
-def train_v3(xtrain,ytrain,xtest,ytest):
+def train_v3(xtrain,ytrain,xval, yval,xtest,ytest):
     # preprocess
     xtrain = preprocess_input(xtrain)
+    xval = preprocess_input(xval)
     xtest = preprocess_input(xtest)
-
-    # split off validation
-    xtrain, xval,ytrain, yval = train_test_split(xtrain,ytrain,test_size=.2)
 
     # create the base pre-trained model
     base_model = InceptionV3(weights='imagenet', include_top=False)
@@ -214,8 +208,8 @@ def train_v3(xtrain,ytrain,xtest,ytest):
                           epochs=opt.epoch2,
                           callbacks=[checkpoint])
 
-def results(xtrain,ytrain,xtest,ytest,target_names):
-    model = keras.models.load_model(opt.output_dir + opt.model +".h5")
+def results(xtrain,ytrain,xtest,ytest,target_names,model_dir):
+    model = keras.models.load_model(model_dir)
 
     score = model.evaluate(xtest, ytest, verbose=1)
     print(f'Test score:    {score[0]: .4f}')
@@ -246,6 +240,17 @@ def results(xtrain,ytrain,xtest,ytest,target_names):
         )
     )
 
+def results2(xtrain,ytrain,xtest,ytest,target_names,model_dir):
+    model = keras.models.load_model(model_dir)
+
+    score = model.evaluate(xval, yval, verbose=1)
+    print(f'Val score:    {score[0]: .4f}')
+    print(f'Val accuracy: {score[1] * 100.:.2f}')
+
+    score = model.evaluate(xtest, ytest, verbose=1)
+    print(f'Test score:    {score[0]: .4f}')
+    print(f'Test accuracy: {score[1] * 100.:.2f}')
+
 if __name__ == '__main__':
     # load data
     if opt.load_dataset == False:
@@ -253,23 +258,29 @@ if __name__ == '__main__':
 
         # one hot
         ytrain,ytest,target_names = onehot(ytrain,ytest)
+        # split off validation
+        xtrain, xval,ytrain, yval = train_test_split(xtrain,ytrain,test_size=.2)
 
         if opt.save_dataset == True:
             pickle.dump((xtrain,ytrain), open(opt.path_prep+"train.p", "wb"), protocol=4)
+            pickle.dump((xval, yval), open(opt.path_prep+"val.p", "wb"), protocol=4)
             pickle.dump((xtest, ytest), open(opt.path_prep+"test.p", "wb"), protocol=4)
             pickle.dump(target_names, open(opt.path_prep+"target_names.p", "wb"), protocol=4)
     else:
         xtrain,ytrain = pickle.load(open(opt.path_prep + "train.p","rb"))
+        xval,yval = pickle.load(open(opt.path_prep + "val.p","rb"))
         xtest,ytest = pickle.load(open(opt.path_prep + "test.p","rb"))
         target_names = pickle.load(open(opt.path_prep + "target_names.p","rb"))
 
     #train model
     if opt.train == True:
         if opt.model == "model_v1":
-            train_v1(xtrain,ytrain,xtest,ytest)
+            history = train_v1(xtrain,ytrain,xval, yval,xtest,ytest)
+            pickle.dump(history, open(opt.path_prep+"history_v1.p", "wb"), protocol=4)
         if opt.model == "model_v3":
-            train_v3(xtrain,ytrain,xtest,ytest)
+            train_v3(xtrain,ytrain,xval, yval,xtest,ytest)
 
     # results of trained model
     if opt.test == True:
-        results(xtrain,ytrain,xtest,ytest, target_names)
+        model_dir = opt.output_dir + opt.model +".h5"
+        results2(xtrain,ytrain,xtest,ytest, target_names, model_dir)
