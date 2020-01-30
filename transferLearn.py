@@ -240,7 +240,7 @@ def results(xtrain,ytrain,xtest,ytest,target_names,model_dir):
         )
     )
 
-def results2(xtrain,ytrain,xtest,ytest,target_names,model_dir):
+def results2(xtrain,ytrain,xval, yval,xtest,ytest,target_names,model_dir):
     model = keras.models.load_model(model_dir)
 
     score = model.evaluate(xval, yval, verbose=1)
@@ -283,4 +283,4 @@ if __name__ == '__main__':
     # results of trained model
     if opt.test == True:
         model_dir = opt.output_dir + opt.model +".h5"
-        results2(xtrain,ytrain,xtest,ytest, target_names, model_dir)
+        results2(xtrain,ytrain,xval, yval,xtest,ytest, target_names, model_dir)
