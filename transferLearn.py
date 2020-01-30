@@ -129,7 +129,6 @@ def train_v1(xtrain,ytrain,xval, yval,xtest,ytest):
     # create a checkpoint to save the model
     csv_logger = keras.callbacks.CSVLogger(
         opt.output_dir + "history_" + opt.model + ".csv",
-        # save_best_only=True,
     )
 
     # train
@@ -200,17 +199,22 @@ def train_v3(xtrain,ytrain,xval, yval,xtest,ytest):
     checkpoint = keras.callbacks.ModelCheckpoint(
         opt.output_dir + opt.model + ".h5",
         monitor='val_acc',
-        save_best_only=True,
+        # save_best_only=True,
+    )
+
+    # create a checkpoint to save the model
+    csv_logger = keras.callbacks.CSVLogger(
+        opt.output_dir + "history_" + opt.model + ".csv",
     )
 
     # we train our model again (this time fine-tuning the top 2 inception blocks
     # alongside the top Dense layers
     print("ephochs2:",opt.epoch2)
-    history = model.fit(xtrain,
-                          ytrain,
-                          validation_data=(xval,yval),
-                          epochs=opt.epoch2,
-                          callbacks=[checkpoint])
+    model.fit(xtrain,
+              ytrain,
+              validation_data=(xval,yval),
+              epochs=opt.epoch2,
+              callbacks=[checkpoint,csv_logger])
 
 def results(xtrain,ytrain,xtest,ytest,target_names,model_dir):
     model = keras.models.load_model(model_dir)
@@ -247,13 +251,23 @@ def results(xtrain,ytrain,xtest,ytest,target_names,model_dir):
 def results2(xtrain,ytrain,xval, yval,xtest,ytest,target_names,model_dir):
     model = keras.models.load_model(model_dir)
 
-    score = model.evaluate(xval, yval, verbose=1)
-    print(f'Val score:    {score[0]: .4f}')
-    print(f'Val accuracy: {score[1] * 100.:.2f}')
+    print("Val:")
+    preds = model.predict(xval)
+    print(
+            classification_report(
+                np.argmax(yval, axis=-1),
+                np.argmax(preds, axis=-1),
+            )
+    )
 
-    score = model.evaluate(xtest, ytest, verbose=1)
-    print(f'Test score:    {score[0]: .4f}')
-    print(f'Test accuracy: {score[1] * 100.:.2f}')
+    print("Test:")
+    preds = model.predict(xtest)
+    print(
+            classification_report(
+                np.argmax(ytest, axis=-1),
+                np.argmax(preds, axis=-1),
+            )
+    )
 
 if __name__ == '__main__':
     # load data
