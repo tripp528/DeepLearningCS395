@@ -120,13 +120,6 @@ def train_v1(xtrain,ytrain,xval, yval,xtest,ytest):
     )
 
     # create a checkpoint to save the model
-    checkpoint = keras.callbacks.ModelCheckpoint(
-        opt.output_dir + opt.model + ".h5",
-        monitor='val_acc',
-        # save_best_only=True,
-    )
-
-    # create a checkpoint to save the model
     csv_logger = keras.callbacks.CSVLogger(
         opt.output_dir + "history_" + opt.model + ".csv",
     )
@@ -137,7 +130,9 @@ def train_v1(xtrain,ytrain,xval, yval,xtest,ytest):
                        ytrain,
                        validation_data=(xval,yval),
                        epochs=opt.epoch2,
-                       callbacks=[checkpoint,csv_logger])
+                       callbacks=[csv_logger])
+
+    model.save(opt.output_dir + opt.model + ".h5")
 
 def train_v3(xtrain,ytrain,xval, yval,xtest,ytest):
     # preprocess
