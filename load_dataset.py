@@ -41,7 +41,7 @@ def load_dataset(num_samples=20000):
     return np.asarray(images_train), pd.DataFrame(labels_train), \
             np.asarray(images_test), pd.DataFrame(labels_test)
 
-def onehot(ytrain, yval, ytest):
+def onehot(ytrain, ytest):
     # one hot encode with sklearn
     enc = OneHotEncoder(handle_unknown = 'ignore')
 
@@ -50,10 +50,9 @@ def onehot(ytrain, yval, ytest):
     enc.fit(ytrain)
 
     ytrain_1hot = enc.transform(ytrain).toarray()
-    yval_1hot = enc.transform(yval).toarray()
     ytest_1hot = enc.transform(ytest).toarray()
 
-    return ytrain_1hot,yval_1hot, ytest_1hot, enc.categories_[0]
+    return ytrain_1hot, ytest_1hot, enc.categories_[0]
 
 def stdScale(xtrain, xval, xtest):
     # scaler = StandardScaler()

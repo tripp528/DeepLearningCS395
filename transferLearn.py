@@ -88,7 +88,7 @@ def available_gpus():
     local_device_protos = device_lib.list_local_devices()
     return [x.name for x in local_device_protos if x.device_type == 'GPU']
 
-def train_v1(xtrain,ytrain,xtest,ytest):
+def train_v1(xtrain,ytrain,xval, yval,xtest,ytest):
     # preprocess
     xtrain, xval, xtest = stdScale(xtrain, xval, xtest)
 
@@ -126,15 +126,19 @@ def train_v1(xtrain,ytrain,xtest,ytest):
         # save_best_only=True,
     )
 
+    # create a checkpoint to save the model
+    csv_logger = keras.callbacks.CSVLogger(
+        opt.output_dir + "history_" + opt.model + ".csv",
+        # save_best_only=True,
+    )
+
     # train
     print("ephochs2:",opt.epoch2)
-    history = parallel_model.fit(xtrain,
-                               ytrain,
-                               validation_data=(xval,yval),
-                               epochs=opt.epoch2,
-                               callbacks=[checkpoint])
-
-    return history
+    parallel_model.fit(xtrain,
+                       ytrain,
+                       validation_data=(xval,yval),
+                       epochs=opt.epoch2,
+                       callbacks=[checkpoint,csv_logger])
 
 def train_v3(xtrain,ytrain,xval, yval,xtest,ytest):
     # preprocess
@@ -275,8 +279,7 @@ if __name__ == '__main__':
     #train model
     if opt.train == True:
         if opt.model == "model_v1":
-            history = train_v1(xtrain,ytrain,xval, yval,xtest,ytest)
-            pickle.dump(history, open(opt.path_prep+"history_v1.p", "wb"), protocol=4)
+            train_v1(xtrain,ytrain,xval, yval,xtest,ytest)
         if opt.model == "model_v3":
             train_v3(xtrain,ytrain,xval, yval,xtest,ytest)
 
