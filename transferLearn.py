@@ -132,7 +132,9 @@ def train_v1(xtrain,ytrain,xval, yval,xtest,ytest):
                        epochs=opt.epoch2,
                        callbacks=[csv_logger])
 
-    model.save(opt.output_dir + opt.model + ".h5")
+    # model.save(opt.output_dir + opt.model + ".h5")
+
+    return model
 
 def train_v3(xtrain,ytrain,xval, yval,xtest,ytest):
     # preprocess
@@ -191,13 +193,6 @@ def train_v3(xtrain,ytrain,xval, yval,xtest,ytest):
                   metrics=['accuracy'])
 
     # create a checkpoint to save the model
-    checkpoint = keras.callbacks.ModelCheckpoint(
-        opt.output_dir + opt.model + ".h5",
-        monitor='val_acc',
-        # save_best_only=True,
-    )
-
-    # create a checkpoint to save the model
     csv_logger = keras.callbacks.CSVLogger(
         opt.output_dir + "history_" + opt.model + ".csv",
     )
@@ -209,9 +204,9 @@ def train_v3(xtrain,ytrain,xval, yval,xtest,ytest):
               ytrain,
               validation_data=(xval,yval),
               epochs=opt.epoch2,
-              callbacks=[checkpoint,csv_logger])
+              callbacks=[csv_logger])
 
-def results(xtrain,ytrain,xtest,ytest,target_names,model_dir):
+def results(xtrain,ytrain,xtest,ytest,target_names,model):
     model = keras.models.load_model(model_dir)
 
     score = model.evaluate(xtest, ytest, verbose=1)
@@ -244,7 +239,7 @@ def results(xtrain,ytrain,xtest,ytest,target_names,model_dir):
     )
 
 def results2(xtrain,ytrain,xval, yval,xtest,ytest,target_names,model_dir):
-    model = keras.models.load_model(model_dir)
+    # model = keras.models.load_model(model_dir)
 
     print("Val:")
     preds = model.predict(xval)
@@ -288,11 +283,12 @@ if __name__ == '__main__':
     #train model
     if opt.train == True:
         if opt.model == "model_v1":
-            train_v1(xtrain,ytrain,xval, yval,xtest,ytest)
+            model = train_v1(xtrain,ytrain,xval, yval,xtest,ytest)
+            results2(xtrain,ytrain,xval, yval,xtest,ytest, target_names, model)
         if opt.model == "model_v3":
             train_v3(xtrain,ytrain,xval, yval,xtest,ytest)
 
     # results of trained model
     if opt.test == True:
-        model_dir = opt.output_dir + opt.model +".h5"
-        results2(xtrain,ytrain,xval, yval,xtest,ytest, target_names, model_dir)
+        # model_dir = opt.output_dir + opt.model +".h5"
+        results2(xtrain,ytrain,xval, yval,xtest,ytest, target_names, model)
