@@ -132,9 +132,9 @@ def train_v1(xtrain,ytrain,xval, yval,xtest,ytest):
                        epochs=opt.epoch2,
                        callbacks=[csv_logger])
 
-    # model.save(opt.output_dir + opt.model + ".h5")
+    parallel_model.save(opt.output_dir + opt.model + ".h5")
 
-    return model
+    return parallel_model
 
 def train_v3(xtrain,ytrain,xval, yval,xtest,ytest):
     # preprocess
@@ -238,8 +238,7 @@ def results(xtrain,ytrain,xtest,ytest,target_names,model):
         )
     )
 
-def results2(xtrain,ytrain,xval, yval,xtest,ytest,target_names,model_dir):
-    # model = keras.models.load_model(model_dir)
+def results2(xtrain,ytrain,xval, yval,xtest,ytest,target_names,model):
 
     print("Val:")
     preds = model.predict(xval)
@@ -284,11 +283,12 @@ if __name__ == '__main__':
     if opt.train == True:
         if opt.model == "model_v1":
             model = train_v1(xtrain,ytrain,xval, yval,xtest,ytest)
-            results2(xtrain,ytrain,xval, yval,xtest,ytest, target_names, model)
+            # results2(xtrain,ytrain,xval, yval,xtest,ytest, target_names, model)
         if opt.model == "model_v3":
             train_v3(xtrain,ytrain,xval, yval,xtest,ytest)
 
     # results of trained model
     if opt.test == True:
-        # model_dir = opt.output_dir + opt.model +".h5"
+        model_dir = opt.output_dir + opt.model +".h5"
+        model = keras.models.load_model(model_dir)
         results2(xtrain,ytrain,xval, yval,xtest,ytest, target_names, model)
