@@ -132,7 +132,7 @@ def train_v1(xtrain,ytrain,xval, yval,xtest,ytest):
                        epochs=opt.epoch2,
                        callbacks=[csv_logger])
 
-    parallel_model.save(opt.output_dir + opt.model + ".h5")
+    # parallel_model.save(opt.output_dir + opt.model + ".h5")
 
     results2(xtrain,ytrain,xval, yval,xtest,ytest, target_names, parallel_model)
 
