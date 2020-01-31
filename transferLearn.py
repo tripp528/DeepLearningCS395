@@ -134,7 +134,9 @@ def train_v1(xtrain,ytrain,xval, yval,xtest,ytest):
 
     parallel_model.save(opt.output_dir + opt.model + ".h5")
 
-    return parallel_model
+    results2(xtrain,ytrain,xval, yval,xtest,ytest, target_names, parallel_model)
+
+    # return parallel_model
 
 def train_v3(xtrain,ytrain,xval, yval,xtest,ytest):
     # preprocess
@@ -282,7 +284,7 @@ if __name__ == '__main__':
     #train model
     if opt.train == True:
         if opt.model == "model_v1":
-            model = train_v1(xtrain,ytrain,xval, yval,xtest,ytest)
+            train_v1(xtrain,ytrain,xval, yval,xtest,ytest)
             # results2(xtrain,ytrain,xval, yval,xtest,ytest, target_names, model)
         if opt.model == "model_v3":
             train_v3(xtrain,ytrain,xval, yval,xtest,ytest)
