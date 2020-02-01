@@ -15,6 +15,7 @@ from tensorflow.keras.preprocessing import image
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Input
 from tensorflow.keras import backend as K
+from tensorflow.keras.optimizers import SGD
 
 # silence warnings
 # import os
@@ -32,9 +33,7 @@ flags.DEFINE_boolean("save_dataset",False,"Whether to save preprocessed dataset"
 flags.DEFINE_string("path_prep","Data/prep/","Number of samples")
 
 #save/load model options
-flags.DEFINE_boolean("train",True,"Whether to train or load model")
-flags.DEFINE_boolean("test",True,"Whether to calculate results")
-flags.DEFINE_string("output_dir","output/","Number of samples")
+flags.DEFINE_string("output_dir","output/","output directory")
 flags.DEFINE_string("model","model_v3","Which model?")
 
 # training options
@@ -134,7 +133,7 @@ def train_v1(xtrain,ytrain,xval, yval,xtest,ytest):
 
     # parallel_model.save(opt.output_dir + opt.model + ".h5")
 
-    results2(xtrain,ytrain,xval, yval,xtest,ytest, target_names, parallel_model)
+    results2(xtrain,ytrain,xval, yval,xtest,ytest, parallel_model)
 
     # return parallel_model
 
@@ -189,58 +188,43 @@ def train_v3(xtrain,ytrain,xval, yval,xtest,ytest):
 
     # we need to recompile the model for these modifications to take effect
     # we use SGD with a low learning rate
-    from keras.optimizers import SGD
     model.compile(optimizer=SGD(lr=0.0001, momentum=0.9),
                   loss='categorical_crossentropy',
                   metrics=['accuracy'])
 
-    # create a checkpoint to save the model
+    # Distribute the neural network over multiple GPUs if available.
+    gpu_count = len(available_gpus())
+    if gpu_count > 1:
+        print(f"\n\nModel parallelized over {gpu_count} GPUs.\n\n")
+        parallel_model = keras.utils.multi_gpu_model(model, gpus=gpu_count)
+    else:
+        print("\n\nModel not parallelized over GPUs.\n\n")
+        parallel_model = model
+
+    parallel_model.compile(
+        optimizer='adam',
+        loss='categorical_crossentropy',
+        metrics=['accuracy'],
+    )
+
+    # create a checkpoint to save the history
     csv_logger = keras.callbacks.CSVLogger(
         opt.output_dir + "history_" + opt.model + ".csv",
     )
 
+
     # we train our model again (this time fine-tuning the top 2 inception blocks
     # alongside the top Dense layers
     print("ephochs2:",opt.epoch2)
-    model.fit(xtrain,
+    parallel_model.fit(xtrain,
               ytrain,
               validation_data=(xval,yval),
               epochs=opt.epoch2,
               callbacks=[csv_logger])
 
-def results(xtrain,ytrain,xtest,ytest,target_names,model):
-    model = keras.models.load_model(model_dir)
+    results2(xtrain,ytrain,xval, yval,xtest,ytest, parallel_model)
 
-    score = model.evaluate(xtest, ytest, verbose=1)
-    print(f'Test score:    {score[0]: .4f}')
-    print(f'Test accuracy: {score[1] * 100.:.2f}')
-
-    preds = model.predict(xtest)
-
-    c = confusion_matrix(np.argmax(ytest, axis=-1), np.argmax(preds, axis=-1))
-    # plot_confusion_matrix(
-    #     c,
-    #     list(range(len(target_names))),
-    #     normalize=False,
-    #     output_path=opt.output_dir,
-    # )
-    # plot_confusion_matrix(
-    #     c,
-    #     list(range(len(target_names))),
-    #     normalize=True,
-    #     output_path=opt.output_dir,
-    # )
-
-    print("target_names:",target_names)
-    print(
-        classification_report(
-            np.argmax(ytest, axis=-1),
-            np.argmax(preds, axis=-1),
-            # target_names=[str(x) for x in range(len(target_names))],
-        )
-    )
-
-def results2(xtrain,ytrain,xval, yval,xtest,ytest,target_names,model):
+def results2(xtrain,ytrain,xval, yval,xtest,ytest,model):
 
     print("Val:")
     preds = model.predict(xval)
@@ -282,15 +266,7 @@ if __name__ == '__main__':
         target_names = pickle.load(open(opt.path_prep + "target_names.p","rb"))
 
     #train model
-    if opt.train == True:
-        if opt.model == "model_v1":
-            train_v1(xtrain,ytrain,xval, yval,xtest,ytest)
-            # results2(xtrain,ytrain,xval, yval,xtest,ytest, target_names, model)
-        if opt.model == "model_v3":
-            train_v3(xtrain,ytrain,xval, yval,xtest,ytest)
-
-    # results of trained model
-    if opt.test == True:
-        model_dir = opt.output_dir + opt.model +".h5"
-        model = keras.models.load_model(model_dir)
-        results2(xtrain,ytrain,xval, yval,xtest,ytest, target_names, model)
+    if opt.model == "model_v1":
+        train_v1(xtrain,ytrain,xval, yval,xtest,ytest)
+    if opt.model == "model_v3":
+        train_v3(xtrain,ytrain,xval, yval,xtest,ytest)
