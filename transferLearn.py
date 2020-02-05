@@ -10,9 +10,10 @@ import tensorflow as tf
 from tensorflow.python.client import device_lib
 
 from tensorflow import keras
+from tensorflow.keras.applications import vgg16
 from tensorflow.keras.applications.inception_v3 import InceptionV3, preprocess_input
 from tensorflow.keras.preprocessing import image
-from tensorflow.keras.models import Model
+from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Input
 from tensorflow.keras import backend as K
 from tensorflow.keras.optimizers import SGD
@@ -135,7 +136,64 @@ def train_v1(xtrain,ytrain,xval, yval,xtest,ytest):
 
     results2(xtrain,ytrain,xval, yval,xtest,ytest, parallel_model)
 
-    # return parallel_model
+def train_v2(xtrain,ytrain,xval, yval,xtest,ytest):
+    # preprocess
+    xtrain = preprocess_input(xtrain)
+    xval = preprocess_input(xval)
+    xtest = preprocess_input(xtest)
+    extractor_model = InceptionV3(weights='imagenet', include_top=False)
+
+    # xtrain = vgg16.preprocess_input(xtrain)
+    # xval = vgg16.preprocess_input(xval)
+    # xtest = vgg16.preprocess_input(xtest)
+    # extractor_model = vgg16.VGG16(weights='imagenet', include_top=False)
+
+    features = extractor_model.predict(xtrain)
+
+    # linear softmax model
+    num_categories = ytrain.shape[1]
+    input_shape = features.shape
+
+    model = Sequential([
+        Dense(num_categories, input_shape=input_shape),
+        Activation('softmax'),
+    ])
+
+    # For a multi-class classification problem
+    model.compile(optimizer='adam',
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])
+
+    # Distribute the neural network over multiple GPUs if available.
+    gpu_count = len(available_gpus())
+    if gpu_count > 1:
+        print(f"\n\nModel parallelized over {gpu_count} GPUs.\n\n")
+        parallel_model = keras.utils.multi_gpu_model(model, gpus=gpu_count)
+    else:
+        print("\n\nModel not parallelized over GPUs.\n\n")
+        parallel_model = model
+
+    parallel_model.compile(
+        optimizer='adam',
+        loss='categorical_crossentropy',
+        metrics=['accuracy'],
+    )
+
+    # create a checkpoint to save the model history
+    csv_logger = keras.callbacks.CSVLogger(
+        opt.output_dir + "history_" + opt.model + ".csv",
+    )
+
+    # train
+    print("ephochs2:",opt.epoch2)
+    parallel_model.fit(xtrain,
+                       ytrain,
+                       validation_data=(xval,yval),
+                       epochs=opt.epoch2,
+                       callbacks=[csv_logger])
+
+    results2(xtrain,ytrain,xval, yval,xtest,ytest, parallel_model)
+
 
 def train_v3(xtrain,ytrain,xval, yval,xtest,ytest):
     # preprocess
@@ -268,5 +326,7 @@ if __name__ == '__main__':
     #train model
     if opt.model == "model_v1":
         train_v1(xtrain,ytrain,xval, yval,xtest,ytest)
+    if opt.model == "model_v2":
+        train_v2(xtrain,ytrain,xval, yval,xtest,ytest)
     if opt.model == "model_v3":
         train_v3(xtrain,ytrain,xval, yval,xtest,ytest)
