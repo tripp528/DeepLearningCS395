@@ -143,16 +143,13 @@ def train_v2(xtrain,ytrain,xval, yval,xtest,ytest):
     xtest = preprocess_input(xtest)
     extractor_model = InceptionV3(weights='imagenet', include_top=False)
 
-    # xtrain = vgg16.preprocess_input(xtrain)
-    # xval = vgg16.preprocess_input(xval)
-    # xtest = vgg16.preprocess_input(xtest)
-    # extractor_model = vgg16.VGG16(weights='imagenet', include_top=False)
-
-    features = extractor_model.predict(xtrain)
+    xtrain = extractor_model.predict(xtrain)
+    xval = extractor_model.predict(xval)
+    xtest = extractor_model.predict(xtest)
 
     # linear softmax model
     num_categories = ytrain.shape[1]
-    input_shape = features.shape
+    input_shape = xtrain.shape[1:]
 
     model = Sequential([
         Dense(num_categories, input_shape=input_shape),
