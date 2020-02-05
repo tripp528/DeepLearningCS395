@@ -14,7 +14,7 @@ from tensorflow.keras.applications import vgg16
 from tensorflow.keras.applications.inception_v3 import InceptionV3, preprocess_input
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.models import Model, Sequential
-from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Input
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Input, Activation
 from tensorflow.keras import backend as K
 from tensorflow.keras.optimizers import SGD
 
