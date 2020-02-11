@@ -14,7 +14,7 @@ from tensorflow.keras.applications import vgg16
 from tensorflow.keras.applications.inception_v3 import InceptionV3, preprocess_input
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.models import Model, Sequential
-from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Input, Activation
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Input, Activation, Flatten
 from tensorflow.keras import backend as K
 from tensorflow.keras.optimizers import SGD
 
@@ -155,10 +155,10 @@ def train_v2(xtrain,ytrain,xval, yval,xtest,ytest):
     num_categories = ytrain.shape[1]
     input_shape = xtrain.shape[1:]
 
-    model = Sequential([
-        Dense(num_categories, input_shape=input_shape),
-        Activation('softmax'),
-    ])
+    inputs = Input(shape=input_shape)                 # input layer
+    flat = Flatten()(inputs)
+    outputs = Dense(num_categories, activation='softmax')(flat) # output layer
+    model = Model(inputs, outputs)
 
     # For a multi-class classification problem
     model.compile(optimizer='adam',
