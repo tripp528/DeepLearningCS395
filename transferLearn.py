@@ -42,6 +42,10 @@ flags.DEFINE_integer("num_samples",20000,"Number of samples")
 flags.DEFINE_integer("epoch1",1,"Epochs for first pass")
 flags.DEFINE_integer("epoch2",1,"Epochs for second pass")
 
+#gpu options
+flags.DEFINE_boolean("ubu",False,"Whether on ubuntu linux box")
+
+
 opt = flags.FLAGS
 
 def plot_confusion_matrix(cm,classes,normalize=False,title='Confusion matrix',cmap='Blues',output_path='.',):
@@ -300,6 +304,14 @@ def results2(xtrain,ytrain,xval, yval,xtest,ytest,model):
     )
 
 if __name__ == '__main__':
+    # configure gpus if on ubuntu
+    if opt.ubu == True:
+        gpus = tf.config.experimental.list_physical_devices('GPU')
+        tf.config.experimental.set_virtual_device_configuration(
+                gpus[0],
+                [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=4624)])
+        pass
+
     # load data
     if opt.load_dataset == False:
         xtrain,ytrain,xtest,ytest = load_dataset(num_samples=opt.num_samples)
