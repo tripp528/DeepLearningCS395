@@ -165,21 +165,6 @@ def train_v2(xtrain,ytrain,xval, yval,xtest,ytest):
                   loss='categorical_crossentropy',
                   metrics=['accuracy'])
 
-    # Distribute the neural network over multiple GPUs if available.
-    gpu_count = len(available_gpus())
-    if gpu_count > 1:
-        print(f"\n\nModel parallelized over {gpu_count} GPUs.\n\n")
-        parallel_model = keras.utils.multi_gpu_model(model, gpus=gpu_count)
-    else:
-        print("\n\nModel not parallelized over GPUs.\n\n")
-        parallel_model = model
-
-    parallel_model.compile(
-        optimizer='adam',
-        loss='categorical_crossentropy',
-        metrics=['accuracy'],
-    )
-
     # create a checkpoint to save the model history
     csv_logger = keras.callbacks.CSVLogger(
         opt.output_dir + "history_" + opt.model + ".csv",
@@ -187,13 +172,13 @@ def train_v2(xtrain,ytrain,xval, yval,xtest,ytest):
 
     # train
     print("ephochs2:",opt.epoch2)
-    parallel_model.fit(xtrain,
+    model.fit(xtrain,
                        ytrain,
                        validation_data=(xval,yval),
                        epochs=opt.epoch2,
                        callbacks=[csv_logger])
 
-    results2(xtrain,ytrain,xval, yval,xtest,ytest, parallel_model)
+    results2(xtrain,ytrain,xval, yval,xtest,ytest, model)
 
 
 def train_v3(xtrain,ytrain,xval, yval,xtest,ytest):
